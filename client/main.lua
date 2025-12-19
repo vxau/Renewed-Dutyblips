@@ -4,6 +4,33 @@ local cops = {}
 local nearbyCops = {}
 local whiteListed = false
 
+local function getCopFromSource(source)
+    for i = 1, #cops do
+        if cops[i].source == source then
+            return i
+        end
+    end
+end
+
+local function clearNearbyCop(source)
+    if nearbyCops[source] then
+        nearbyCops[source] = nil
+        local index = getCopFromSource(source)
+        local cop = index and cops[index]
+
+        if cop and cop.blip then
+            local blipCoord = GetBlipCoords(cop.blip)
+
+            RemoveBlip(cop.blip)
+
+            cop.blip = Blips.addBlipForCoord(blipCoord, {
+                color = cop.color,
+                name = cop.name,
+            })
+        end
+    end
+end
+
 Utils.registerNetEvent('Renewed-Dutyblips:updateBlips', function(data)
     for i = 1, #data do
         local cop = cops[i]
@@ -23,14 +50,6 @@ Utils.registerNetEvent('Renewed-Dutyblips:updateBlips', function(data)
     end
 end)
 
-
-local function getCopFromSource(source)
-    for i = 1, #cops do
-        if cops[i].source == source then
-            return i
-        end
-    end
-end
 
 local loopRunning = false
 local function nearbyLoop()
@@ -57,8 +76,12 @@ end
 AddStateBagChangeHandler('renewed_dutyblips', nil, function(bagName, _, value)
     local source = tonumber(bagName:gsub('player:', ''), 10)
 
-    if not whiteListed or source == cache.serverId or not value then
+    if not whiteListed or source == cache.serverId then
         return
+    end
+
+    if not value then
+        return clearNearbyCop(source)
     end
 
     local index = getCopFromSource(source)
@@ -87,22 +110,7 @@ AddStateBagChangeHandler('renewed_dutyblips', nil, function(bagName, _, value)
 end)
 
 RegisterNetEvent('onPlayerDropped', function(serverId)
-    if nearbyCops[serverId] then
-        nearbyCops[serverId] = nil
-        local index = getCopFromSource(serverId)
-        local cop = index and cops[index]
-
-        if cop and cop.blip then
-            local blipCoord = GetBlipCoords(cop.blip)
-
-            RemoveBlip(cop.blip)
-
-            cop.blip = Blips.addBlipForCoord(blipCoord, {
-                color = cop.color,
-                name = cop.name,
-            })
-        end
-    end
+    clearNearbyCop(serverId)
 end)
 
 
@@ -115,8 +123,14 @@ Utils.registerNetEvent('Renewed-Dutyblips:addOfficer', function(data)
 end)
 
 Utils.registerNetEvent('Renewed-Dutyblips:removeOfficer', function(index)
-    if cops[index] then
-        local blip = cops[index].blip
+    local cop = cops[index]
+
+    if cop then
+        if cop.source then
+            nearbyCops[cop.source] = nil
+        end
+
+        local blip = cop.blip
 
         if blip then
             RemoveBlip(blip)
