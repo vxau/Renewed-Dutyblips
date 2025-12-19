@@ -50,6 +50,8 @@ local function nearbyLoop()
         end
         Wait(1000)
     end
+
+    loopRunning = false
 end
 
 AddStateBagChangeHandler('renewed_dutyblips', nil, function(bagName, _, value)
