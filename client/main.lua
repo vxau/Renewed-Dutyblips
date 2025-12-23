@@ -63,7 +63,11 @@ local function nearbyLoop()
             local pedHandle = nearbyCops[cop.source]
 
             if cop.blip and pedHandle then
-                Blips.changeBlipForEntity(cop.blip, pedHandle)
+                if pedHandle > 0 and DoesEntityExist(pedHandle) then
+                    Blips.changeBlipForEntity(cop.blip, pedHandle)
+                else
+                    clearNearbyCop(cop.source)
+                end
             end
 
         end
