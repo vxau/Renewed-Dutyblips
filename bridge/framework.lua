@@ -7,6 +7,10 @@ local wasInService = {}
 AddStateBagChangeHandler('renewed_service', '', function(bagName, _, value)
     local source = GetPlayerFromStateBagName(bagName)
 
+    if not source or source <= 0 or (not GetPlayerName(source) and not NetworkIsPlayerActive(source)) then
+        return
+    end
+
     if value and dutyGroup[value] then
         duty.add(source)
         wasInService[source] = true
