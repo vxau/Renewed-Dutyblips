@@ -3,6 +3,8 @@ local Blips = require 'client.blip'
 local cops = {}
 local nearbyCops = {}
 local whiteListed = false
+local STREAMING_DISTANCE = 550.0
+local STREAMING_DISTANCE_SQ = STREAMING_DISTANCE * STREAMING_DISTANCE
 
 local function getCopFromSource(source)
     for i = 1, #cops do
@@ -36,6 +38,8 @@ Utils.registerNetEvent('Renewed-Dutyblips:updateBlips', function(data)
         local cop = cops[i]
 
         if cop then
+            cop.lastCoords = data[i]
+
             if not nearbyCops[cop.source] and cop.source ~= cache.serverId then
                 if cop.blip then
                     Blips.changeBlipCoords(cop.blip, data[i])
@@ -57,14 +61,31 @@ local function nearbyLoop()
     loopRunning = true
 
     while next(nearbyCops) do
+        local playerCoords = GetEntityCoords(cache.ped)
+
         for i = 1, #cops do
             local cop = cops[i]
 
-            local pedHandle = nearbyCops[cop.source]
+            local pedHandle = cop and nearbyCops[cop.source]
 
-            if cop.blip and pedHandle then
+            if cop and cop.blip and pedHandle then
                 if pedHandle > 0 and DoesEntityExist(pedHandle) then
-                    Blips.changeBlipForEntity(cop.blip, pedHandle)
+                    local pedCoords = GetEntityCoords(pedHandle)
+                    local dx = pedCoords.x - playerCoords.x
+                    local dy = pedCoords.y - playerCoords.y
+
+                    if dx * dx + dy * dy > STREAMING_DISTANCE_SQ then
+                        clearNearbyCop(cop.source)
+                    else
+                        Blips.changeBlipForEntity(cop.blip, pedHandle)
+                    end
+                elseif cop.lastCoords then
+                    local dx = cop.lastCoords.x - playerCoords.x
+                    local dy = cop.lastCoords.y - playerCoords.y
+
+                    if dx * dx + dy * dy > STREAMING_DISTANCE_SQ then
+                        clearNearbyCop(cop.source)
+                    end
                 else
                     clearNearbyCop(cop.source)
                 end
