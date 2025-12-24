@@ -4,6 +4,10 @@ local Utils = {}
 
 local GetPlayerPed = GetPlayerPed
 function Utils.awaitPedHandle(playerId)
+    if not playerId or playerId <= 0 then
+        return false
+    end
+
     local timeout = GetGameTimer() + 4500
     while GetGameTimer() < timeout do
         local ped = GetPlayerPed(playerId)

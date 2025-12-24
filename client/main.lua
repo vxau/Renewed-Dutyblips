@@ -113,9 +113,13 @@ AddStateBagChangeHandler('renewed_dutyblips', nil, function(bagName, _, value)
 
     if index then
         local playerId = GetPlayerFromServerId(source)
+        if not playerId or playerId <= 0 or not NetworkIsPlayerActive(playerId) then
+            return
+        end
+
         local pedHandle = Utils.awaitPedHandle(playerId)
 
-        if pedHandle then
+        if pedHandle and NetworkGetEntityIsNetworked(pedHandle) then
             local cop = cops[index]
 
             if cop.blip then
